@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "es2017"
+    ],
+    "esModuleInterop": true, 
+    "moduleResolution": "node",
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "sourceMap": true,
+    "target": "es2017",
+    "outDir": "lib"
+  },
+  "exclude": [
+    "node_modules",
+    "**/*.spec.ts",
+    "**/tests/TestUtils.ts"
+  ]
+}

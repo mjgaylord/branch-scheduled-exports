@@ -1,0 +1,143 @@
+service:
+  name: scheduled-data-exports
+
+# Add the serverless-webpack plugin
+plugins:
+  - serverless-webpack
+  - serverless-dynamodb-local
+  - serverless-offline
+
+# serverless offline config
+custom:
+  config: ${file(config.json)}
+  app-name: ${self:custom.config.appName}
+  serverless-offline:
+      port: 4000
+      babelOptions:
+        presets: ["es2017"]
+  dynamodb:
+    stages:
+      - ${self:custom.config.stage}
+    start:
+      migrate: true
+  s3Buckets:
+    BUCKET_NAME: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-exports-bucket
+    
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: ${self:custom.config.region}
+  environment:
+    REGION: ${self:custom.config.region}
+    STAGE: ${self:custom.config.stage}
+    APP_NAME: ${self:custom.config.appName}
+    DOWNLOADS_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-files
+    EXPORT_REQUEST_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-export-requests
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:Query
+        - dynamodb:Scan
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - lambda:InvokeFunction
+        - secretsmanager:GetSecretValue
+        - s3:*
+      Resource: 
+        - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.DOWNLOADS_TABLE}"
+        - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.DOWNLOADS_TABLE}/index/*"
+        - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.EXPORT_REQUEST_TABLE}"
+        - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.EXPORT_REQUEST_TABLE}/index/*"
+        - "arn:aws:lambda:${self:custom.config.region}:*:function:*"
+        - "arn:aws:ses:${self:custom.config.region}:*"
+        - "arn:aws:ses:${self:custom.config.region}:*:identity/*"
+        - "arn:aws:secretsmanager:${self:custom.config.region}:*"
+        - "arn:aws:s3:::${self:custom.s3Buckets.BUCKET_NAME}/*"
+        - "arn:aws:s3:::${self:custom.s3Buckets.BUCKET_NAME}"
+        - "arn:aws:logs:${self:custom.config.region}:*:log-group:*"
+        - "arn:aws:logs:${self:custom.config.region}:*:log-group:*:*:*"
+
+functions:
+  start:
+    handler: src/handlers/StartExports.run
+    timeout: 120
+    events:
+      - schedule: rate(6 hours)
+          
+  download:
+    handler: src/handlers/CheckDownloads.run
+    timeout: 120
+    environment:
+      FUNCTION_PREFIX: ${self:service}-${opt:stage, self:provider.stage}
+      EXPORTS_BUCKET: ${self:custom.s3Buckets.BUCKET_NAME}
+    events:
+      - schedule: rate(2 hours)
+
+  copy:
+    handler: src/handlers/CopyFile.run
+    timeout: 900
+
+  status:
+    handler: src/handlers/CheckStatus.run
+    timeout: 30
+    events:
+      - http:
+          method: get
+          path: status
+
+resources:
+  Resources:
+    DownloadsTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: downloadPath
+            AttributeType: S
+          - AttributeName: downloaded
+            AttributeType: S
+        KeySchema:
+          - AttributeName: downloadPath
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: DownloadedIndex
+            KeySchema:
+              - AttributeName: downloaded
+                KeyType: HASH
+            Projection:
+              ProjectionType: KEYS_ONLY
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.DOWNLOADS_TABLE}
+    ExportRequestTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: dateRequested
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+        KeySchema:
+          - AttributeName: dateRequested
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: ExportStatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+            Projection:
+              ProjectionType: KEYS_ONLY
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.EXPORT_REQUEST_TABLE}
