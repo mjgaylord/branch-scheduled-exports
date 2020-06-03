@@ -26,7 +26,7 @@ export const run: APIGatewayProxyHandler = async (_event: any = {}, _context: Co
       return currentRequestDate.isSame(value.dateRequested, 'day')
     })) {
       const request = {dateRequested: currentRequestDate.toDate(), status: ExportRequestStatus.Empty}
-      database.saveExportRequest(request)
+      await database.saveExportRequest(request)
       requests.push(request)
     }
     console.debug(`Outstanding export requests: ${JSON.stringify(requests)}`)

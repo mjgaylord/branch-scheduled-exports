@@ -39,7 +39,7 @@ export const run: APIGatewayProxyHandler = async (_event: any = {}, _context: Co
   }
 }
 
-async function downloadFiles(files: File[], bucket: string) {
+export async function downloadFiles(files: File[], bucket: string) {
   let downloads = []
   files.forEach(file => {
     downloads.push(startDownload(file, bucket))

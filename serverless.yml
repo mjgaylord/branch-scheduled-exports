@@ -33,6 +33,9 @@ provider:
     APP_NAME: ${self:custom.config.appName}
     DOWNLOADS_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-files
     EXPORT_REQUEST_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-export-requests
+    CUSTOM_EXPORT_REQUEST_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-custom-export-requests
+    REPORT_TYPES: ${self:custom.config.reportTypes}
+    BRANCH_APP_ID: ${self:custom.config.branchAppId}
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -50,6 +53,8 @@ provider:
         - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.DOWNLOADS_TABLE}/index/*"
         - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.EXPORT_REQUEST_TABLE}"
         - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.EXPORT_REQUEST_TABLE}/index/*"
+        - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.CUSTOM_EXPORT_REQUEST_TABLE}"
+        - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.CUSTOM_EXPORT_REQUEST_TABLE}/index/*"
         - "arn:aws:lambda:${self:custom.config.region}:*:function:*"
         - "arn:aws:ses:${self:custom.config.region}:*"
         - "arn:aws:ses:${self:custom.config.region}:*:identity/*"
@@ -74,6 +79,14 @@ functions:
       EXPORTS_BUCKET: ${self:custom.s3Buckets.BUCKET_NAME}
     events:
       - schedule: rate(2 hours)
+  
+  startCustom:
+    handler: src/handlers/StartCustomExports.run
+    timeout: 120
+    events:
+      - schedule: rate(2 hours)
+    environment:
+      EXPORTS_BUCKET: ${self:custom.s3Buckets.BUCKET_NAME}
 
   copy:
     handler: src/handlers/CopyFile.run
@@ -141,3 +154,40 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.EXPORT_REQUEST_TABLE}
+    CustomExportRequestTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: endDate
+            AttributeType: S
+          - AttributeName: status
+            AttributeType: S
+          - AttributeName: reportType
+            AttributeType: S
+        KeySchema:
+          - AttributeName: endDate
+            KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: CustomExportStatusIndex
+            KeySchema:
+              - AttributeName: status
+                KeyType: HASH
+            Projection:
+              ProjectionType: KEYS_ONLY
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+          - IndexName: ReportTypeIndex
+            KeySchema:
+              - AttributeName: reportType
+                KeyType: HASH
+            Projection:
+              ProjectionType: KEYS_ONLY
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.CUSTOM_EXPORT_REQUEST_TABLE}

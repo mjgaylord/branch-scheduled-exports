@@ -26,17 +26,20 @@ module.exports.prompts = function () {
         message: 'Invalid AWS Secret Key',
         required: true
       },
+      branchAppId: {
+        description: 'Provide your Branch App ID. This can be found on the Account Settings > Profile page of the Branch dashboard'
+      },
+      branchAccessToken: {
+        description: 'Provide your Branch Access Token (required if you are using Custom Export API) See Account Settings > User on the Branch dashboard for your token'
+      },
+      reportTypes: {
+        description: 'Provide the report types you would like download (required if you are using Custom Export API, ignored for Daily Export API). For a list of available reports see: https://help.branch.io/developers-hub/docs/custom-exports#section-branch-available-topics'
+      },
       branchKey: {
-        description: 'Provide your Branch Key',
-        pattern: /[key_^a-zA-Z0-9\-]+$/,
-        message: 'Invalid. Branch key can be found at: https://branch.dashboard.branch.io/account-settings',
-        required: true
+        description: 'Provide your Branch Key (required if you are using Daily Export API)',
       },
       branchSecret: {
-        description: 'Provide your Branch Secret',
-        pattern: /[secret_^a-zA-Z0-9\_]+$/,
-        message: 'Invalid. Branch secret can be found at: https://branch.dashboard.branch.io/account-settings',
-        required: true
+        description: 'Provide your Branch Secret (required if you are using Daily Export API)',
       },
     }
   }

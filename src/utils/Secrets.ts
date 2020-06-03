@@ -3,6 +3,7 @@ import { secretsManager } from '../utils/Config'
 export enum Secret {
   BranchKey = "branchKey",
   BranchSecret = "branchSecret",
+  BranchAccessToken = "branchAccessToken",
 }
 
 export async function getSecret(secret: Secret): Promise<string> {

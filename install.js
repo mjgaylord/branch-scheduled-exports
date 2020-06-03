@@ -14,13 +14,16 @@ module.exports.install = async function () {
   let awsConfig = {
     accessKeyId: result["awsAccessKeyId"],
     secretAccessKey: result["awsSecretKey"],
-    region: result["region"]
+    region: result["region"],
+    branchAppId: result["branchAppId"],
+    reportTypes: result["reportTypes"]
   }
 
   //create AWS Secrets Manager entries for the keys
   const secretKeys = [
     "awsAccessKeyId", 
     "awsSecretKey", 
+    "branchAccessToken",
     "branchKey", 
     "branchSecret"
   ]

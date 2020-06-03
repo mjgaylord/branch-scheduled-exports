@@ -12,12 +12,15 @@ export const secretsManager = new AWS.SecretsManager({
   region: process.env.REGION
 })
 
-export const templatesBucket = process.env.TEMPLATES_BUCKET
-export const reportReceivers = process.env.EMAIL_RECEIVERS
-export const reportSender = process.env.EMAIL_SENDER
 export const exportsTableName = process.env.DOWNLOADS_TABLE
 export const batchUploadTableName = process.env.BATCH_UPLOAD_TABLE
 export const exportRequestStatusTableName = process.env.EXPORT_REQUEST_TABLE
+export const customExportRequestStatusTableName = process.env.CUSTOM_EXPORT_REQUEST_TABLE
+export const branchAppId = process.env.BRANCH_APP_ID
+
+export const reportTypes = function(): string[] {
+  return process.env.REPORT_TYPES.split(',').map(s => s.trim()).filter(s => s.length > 0)
+}
 
 export function includeOrganic(): Boolean {
   const value = process.env.INCLUDE_ORGANIC
