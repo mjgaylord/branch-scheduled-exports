@@ -12,7 +12,7 @@ const database = new Database()
 export const run: APIGatewayProxyHandler = async (event: APIGatewayEvent, context: Context, _callback: Callback) => {
 
   //@ts-ignore
-  const { path, bucket } = event
+  const { path, bucket, type } = event
 
   console.log(`path to file: ${path}`)
   if (!path) {
@@ -51,9 +51,14 @@ export const run: APIGatewayProxyHandler = async (event: APIGatewayEvent, contex
 function streamUncompressed(path: string, bucket: string, key: string): Promise<string> {
   return new Promise<any>(async (resolve, reject) => {
     https.get(path, async (response) => {
-      console.debug(`Setting up unzip pipeline`)
       console.debug(`Headers: ${JSON.stringify(response.headers)}`)
-      const stream = response.pipe(zlib.createGunzip())
+      let stream: NodeJS.ReadableStream
+      if (path.indexOf('csv.gz') > 0) {
+        console.debug(`Setting up unzip pipeline`)
+        stream = response.pipe(zlib.createGunzip())
+      } else {
+        stream = response
+      }
       await uploadReadableStream(stream, bucket, key, path)
       resolve()
     }).on('error', error => {

@@ -36,6 +36,7 @@ provider:
     CUSTOM_EXPORT_REQUEST_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-custom-export-requests
     REPORT_TYPES: ${self:custom.config.reportTypes}
     BRANCH_APP_ID: ${self:custom.config.branchAppId}
+
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -78,7 +79,7 @@ functions:
       FUNCTION_PREFIX: ${self:service}-${opt:stage, self:provider.stage}
       EXPORTS_BUCKET: ${self:custom.s3Buckets.BUCKET_NAME}
     events:
-      - schedule: rate(2 hours)
+      - schedule: rate(30 minutes)
   
   startCustom:
     handler: src/handlers/StartCustomExports.run
@@ -87,6 +88,7 @@ functions:
       - schedule: rate(2 hours)
     environment:
       EXPORTS_BUCKET: ${self:custom.s3Buckets.BUCKET_NAME}
+      FUNCTION_PREFIX: ${self:service}-${opt:stage, self:provider.stage}
 
   copy:
     handler: src/handlers/CopyFile.run
@@ -102,6 +104,10 @@ functions:
 
 resources:
   Resources:
+    downloadsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.s3Buckets.BUCKET_NAME}
     DownloadsTable:
       Type: 'AWS::DynamoDB::Table'
       DeletionPolicy: Retain
@@ -159,14 +165,14 @@ resources:
       DeletionPolicy: Retain
       Properties:
         AttributeDefinitions:
-          - AttributeName: endDate
+          - AttributeName: itemId
             AttributeType: S
           - AttributeName: status
             AttributeType: S
           - AttributeName: reportType
             AttributeType: S
         KeySchema:
-          - AttributeName: endDate
+          - AttributeName: itemId
             KeyType: HASH
         GlobalSecondaryIndexes:
           - IndexName: CustomExportStatusIndex

@@ -53,13 +53,13 @@ async function startDownload(file: File, bucket: string): Promise<DownloadResult
     console.debug(`Object already exists, skipping... (Key: ${file})`)
     return { success: true, file }
   }
-  console.debug(`Downloading file: ${file}`)
+  console.debug(`Downloading file: ${JSON.stringify(file)}`)
   const functionName = `${process.env.FUNCTION_PREFIX}-copy`
   try {
     await lambda.invoke({
       LogType: 'Tail',
       FunctionName: functionName,
-      Payload: JSON.stringify({ path: file.downloadPath, bucket }) // pass params
+      Payload: JSON.stringify({ path: file.downloadPath, type: file.type, bucket }) // pass params
     }).promise()
     return {success: true, file}
   } catch (error) {

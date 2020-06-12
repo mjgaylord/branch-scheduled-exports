@@ -39,6 +39,9 @@ export function customExportRequestStatusFromValue(value: string) {
   if (value === customExportRequestStatusToString(CustomExportRequestStatus.Running)) {
     return CustomExportRequestStatus.Running
   }
+  if (value === customExportRequestStatusToString(CustomExportRequestStatus.Complete)) {
+    return CustomExportRequestStatus.Complete
+  }
   return CustomExportRequestStatus.Pending
 }
 

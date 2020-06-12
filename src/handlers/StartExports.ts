@@ -17,7 +17,7 @@ export const run: APIGatewayProxyHandler = async (_event: any = {}, _context: Co
 
     // list all unsuccessful requests
     let requests = (await database.listUnsuccessfulExportRequests()).filter(value => {
-      return moment(value.dateRequested).isAfter(sevenDaysOld)
+      return value.dateRequested.isAfter(sevenDaysOld)
     })
 
     // save new request to database and add to list
@@ -25,7 +25,7 @@ export const run: APIGatewayProxyHandler = async (_event: any = {}, _context: Co
     if (!requests.find(value => {
       return currentRequestDate.isSame(value.dateRequested, 'day')
     })) {
-      const request = {dateRequested: currentRequestDate.toDate(), status: ExportRequestStatus.Empty}
+      const request = {dateRequested: currentRequestDate, status: ExportRequestStatus.Empty}
       await database.saveExportRequest(request)
       requests.push(request)
     }
@@ -65,7 +65,7 @@ async function makeExportRequest(database: Database, request: ExportRequest): Pr
   try {
     const key = await getSecret(Secret.BranchKey)
     const secret = await getSecret(Secret.BranchSecret)
-    const requestDate = moment(request.dateRequested).format('YYYY-MM-DD')
+    const requestDate = request.dateRequested.format('YYYY-MM-DD')
     console.debug(`Performing request for: ${requestDate}`)
     const response = await api.post('/export/', {
       branch_key: key,
@@ -95,6 +95,7 @@ export function translateResponse(response: ExportResponse): File[] {
         downloadPath: file,
         downloaded: false, 
         pathAvailable: true,
+        type: 'daily'
       })  
     });
   }

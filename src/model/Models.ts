@@ -4,6 +4,7 @@ export interface File {
   downloaded: boolean
   batchCount?: number
   eventCount?: number
+  type: string
 }
 
 export interface DownloadDatabaseItem {
@@ -39,11 +40,12 @@ export interface CustomExportRequest {
 }
 
 export interface RequestRange {
-  startDate: Date,
-  endDate: Date,
+  startDate: moment.Moment,
+  endDate: moment.Moment,
 }
 
 export interface CustomExportRequestDataItem {
+  itemId: string,
   reportType: string,
   startDate: string,
   endDate: string,
@@ -52,7 +54,7 @@ export interface CustomExportRequestDataItem {
 }
 
 export interface ExportRequest {
-  dateRequested: Date,
+  dateRequested: moment.Moment,
   status: ExportRequestStatus
 }
 

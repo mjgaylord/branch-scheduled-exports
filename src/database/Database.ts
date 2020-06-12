@@ -132,11 +132,12 @@ export class Database {
   }
 
   async saveCustomExportRequest(request: CustomExportRequest): Promise<void> {
-    const { exportRequestStatusTable, dynamoDb } = this
+    const { customExportRequestStatusTable, dynamoDb } = this
     const item = customExportRequestToItem(request)
+    console.debug(`Saving custom export request: ${JSON.stringify(request)}`)
     const result = await dynamoDb
       .put({
-        TableName: exportRequestStatusTable,
+        TableName: customExportRequestStatusTable,
         Item: item,
       })
       .promise()
@@ -147,7 +148,8 @@ export class Database {
     const { customExportRequestStatusTable } = this
     const param = {
       TableName: customExportRequestStatusTable,
-      FilterExpression: 'request_status = :failed OR #request_status = :none OR #request_status = :pending OR #request_status = :running',
+      FilterExpression:
+        'request_status = :failed OR #request_status = :none OR #request_status = :pending OR #request_status = :running',
       ExpressionAttributeValues: {
         ':failed': customExportRequestStatusToString(CustomExportRequestStatus.Failed),
         ':pending': customExportRequestStatusToString(CustomExportRequestStatus.Pending),
@@ -157,6 +159,7 @@ export class Database {
       ExpressionAttributeNames: {
         '#request_status': 'status',
       },
+      ScanIndexForward: true,
     }
     return this.list<CustomExportRequest>(param, itemToCustomExportRequest)
   }
@@ -164,17 +167,22 @@ export class Database {
   async mostRecentCustomExportRequest(reportType: string): Promise<CustomExportRequest | undefined> {
     const param = {
       TableName: this.customExportRequestStatusTable,
-      KeyConditionExpression: 'endDate < :endDate AND reportType = :reportType',
+      FilterExpression: 'reportType = :reportType',
       ExpressionAttributeValues: {
-        ':endDate': moment().subtract(10, 'days').toDate().getTime(),
         ':reportType': reportType,
       },
       ScanIndexForward: false,
-      ConsistentRead: false,
-      Limit: 1
+      Limit: 20, // we don't want to scan the entire table for the latest value
     }
-    const exports = await this.list<CustomExportRequest>(param, itemToCustomExportRequest)[0]
-    return exports.length > 0 ? exports[0] : undefined
+    const exports = await this.list<CustomExportRequest>(param, itemToCustomExportRequest)
+    if (!exports || exports.length === 0) {
+      return
+    }
+    const sorted = exports.sort((a, b) => {
+      return  b.rangeRequested.endDate.valueOf() - a.rangeRequested.startDate.valueOf()
+    })
+    console.debug(`Most recent ${reportType} export: ${JSON.stringify(sorted)}`)
+    return sorted[0]
   }
 
   async listUnsuccessfulExportRequests(): Promise<ExportRequest[]> {
@@ -199,11 +207,7 @@ export class Database {
     if (!data.Items) {
       return []
     }
-    return Promise.all(
-      data.Items.map((item) => {
-        return transform(item)
-      })
-    )
+    return data.Items.map((item) => transform(item))
   }
 }
 
@@ -214,6 +218,7 @@ export function itemToFile(item: any): File {
     pathAvailable: true, // TODO: Change for custom exports...
     batchCount: Number.isInteger(item.batchCount) ? parseInt(item.batchCount) : undefined,
     eventCount: Number.isInteger(item.eventCount) ? parseInt(item.eventCount) : undefined,
+    type: !item.type ? 'daily' : item.type,
   }
 }
 
@@ -227,7 +232,7 @@ export function fileToItem(file: File): DownloadDatabaseItem {
 
 export function exportRequestToItem(request: ExportRequest): ExportRequestDatabaseItem {
   const { dateRequested, status } = request
-  const dateString = moment(dateRequested).format('YYYY-MM-DD')
+  const dateString = moment(dateRequested).toISOString()
   return {
     dateRequested: dateString,
     status: exportRequestStatusToString(status),
@@ -235,20 +240,26 @@ export function exportRequestToItem(request: ExportRequest): ExportRequestDataba
 }
 
 export function customExportRequestToItem(request: CustomExportRequest): CustomExportRequestDataItem {
-  const { rangeRequested: {startDate, endDate}, status, statusUrl, reportType } = request
+  const {
+    rangeRequested: { startDate, endDate },
+    status,
+    statusUrl,
+    reportType,
+  } = request
   return {
-    startDate: `${startDate.getTime()}`,
-    endDate: `${endDate.getTime()}`,
+    itemId: `${reportType}\\${endDate.toISOString()}`,
+    startDate: `${startDate.toISOString()}`,
+    endDate: `${endDate.toISOString()}`,
     status: customExportRequestStatusToString(status),
     statusUrl,
-    reportType
+    reportType,
   }
 }
 
 export function itemToExportRequest(item: DocumentClient.AttributeMap): ExportRequest {
   const { dateRequested, status } = item
   return {
-    dateRequested: moment(dateRequested, 'YYYY-MM-DD').toDate(),
+    dateRequested: moment(dateRequested),
     status: exportRequestStatusFromValue(status),
   }
 }
@@ -257,8 +268,8 @@ export function itemToCustomExportRequest(item: DocumentClient.AttributeMap): Cu
   const { startDate, endDate, statusUrl, status, reportType } = item
   return {
     rangeRequested: {
-      startDate: moment(parseInt(startDate)).toDate(), 
-      endDate: moment(parseInt(endDate)).toDate()
+      startDate: moment(startDate),
+      endDate: moment(endDate),
     },
     statusUrl,
     status: customExportRequestStatusFromValue(status),
