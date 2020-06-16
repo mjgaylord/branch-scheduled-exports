@@ -174,5 +174,17 @@ export const fields = [
   "seconds_from_last_attributed_touch_to_store_install_begin",
   "seconds_from_install_to_event",
   "last_attributed_touch_data_tilde_advertising_account_id",
-  "last_attributed_touch_data_tilde_advertising_account_name"
+  "last_attributed_touch_data_tilde_advertising_account_name",
+  "install_activity_touch_data_tilde_campaign",
+  "install_activity_touch_data_tilde_advertising_partner_name",
+  "install_activity_touch_data_tilde_secondary_publisher",
+  "install_activity_timestamp",
+  "install_activity_touch_data_dollar_3p",
+  "install_activity_attributed",
+  "install_activity_touch_data_tilde_ad_set_name",
+  "install_activity_touch_data_tilde_ad_name",
+  "install_activity_touch_data_additional_data_tilde_campaign_id",
+  "install_activity_touch_data_additional_data_tilde_creative_id",
+  "install_activity_touch_data_additional_data_tilde_ad_set_id",
+  "install_activity_touch_data_additional_data_tilde_ad_id"
 ]
