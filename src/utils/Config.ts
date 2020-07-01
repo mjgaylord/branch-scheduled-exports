@@ -16,6 +16,7 @@ export const exportsTableName = process.env.DOWNLOADS_TABLE
 export const batchUploadTableName = process.env.BATCH_UPLOAD_TABLE
 export const exportRequestStatusTableName = process.env.EXPORT_REQUEST_TABLE
 export const customExportRequestStatusTableName = process.env.CUSTOM_EXPORT_REQUEST_TABLE
+export const mostRecentCustomRequestTableName = process.env.MOST_RECENT_REQUEST_TABLE
 export const branchAppId = process.env.BRANCH_APP_ID
 
 export const reportTypes = function(): string[] {

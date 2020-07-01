@@ -24,6 +24,7 @@ import {
   exportsTableName,
   exportRequestStatusTableName,
   customExportRequestStatusTableName,
+  mostRecentCustomRequestTableName,
 } from '../utils/Config'
 import moment from 'moment'
 
@@ -144,6 +145,19 @@ export class Database {
     console.info(`DB Save result: ${JSON.stringify(result)}`)
   }
 
+  async saveMostRecentCustomExportRequest(request: CustomExportRequest): Promise<void> {
+    const { dynamoDb } = this
+    const item = customExportRequestToItem(request)
+    console.debug(`Saving most recent request: ${JSON.stringify(request)}`)
+    const result = await dynamoDb
+      .put({
+        TableName: mostRecentCustomRequestTableName,
+        Item: item,
+      })
+      .promise()
+    console.info(`DB Save result: ${JSON.stringify(result)}`)
+  }
+
   async listUnsuccessfulCustomExportRequests(): Promise<CustomExportRequest[]> {
     const { customExportRequestStatusTable } = this
     const param = {
@@ -166,23 +180,18 @@ export class Database {
 
   async mostRecentCustomExportRequest(reportType: string): Promise<CustomExportRequest | undefined> {
     const param = {
-      TableName: this.customExportRequestStatusTable,
+      TableName: mostRecentCustomRequestTableName,
       FilterExpression: 'reportType = :reportType',
       ExpressionAttributeValues: {
         ':reportType': reportType,
-      },
-      ScanIndexForward: false,
-      Limit: 20, // we don't want to scan the entire table for the latest value
+      }
     }
     const exports = await this.list<CustomExportRequest>(param, itemToCustomExportRequest)
     if (!exports || exports.length === 0) {
       return
     }
-    const sorted = exports.sort((a, b) => {
-      return  b.rangeRequested.endDate.valueOf() - a.rangeRequested.startDate.valueOf()
-    })
-    console.debug(`Most recent ${reportType} export: ${JSON.stringify(sorted)}`)
-    return sorted[0]
+    console.debug(`Most recent ${reportType} export: ${JSON.stringify(exports)}`)
+    return exports[0]
   }
 
   async listUnsuccessfulExportRequests(): Promise<ExportRequest[]> {

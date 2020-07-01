@@ -34,6 +34,7 @@ provider:
     DOWNLOADS_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-files
     EXPORT_REQUEST_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-export-requests
     CUSTOM_EXPORT_REQUEST_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-custom-export-requests
+    MOST_RECENT_REQUEST_TABLE: ${self:custom.app-name}-${self:service}-${self:custom.config.stage}-most-recent-custom-request
     REPORT_TYPES: ${self:custom.config.reportTypes}
     BRANCH_APP_ID: ${self:custom.config.branchAppId}
 
@@ -56,6 +57,8 @@ provider:
         - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.EXPORT_REQUEST_TABLE}/index/*"
         - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.CUSTOM_EXPORT_REQUEST_TABLE}"
         - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.CUSTOM_EXPORT_REQUEST_TABLE}/index/*"
+        - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.MOST_RECENT_REQUEST_TABLE}"
+        - "arn:aws:dynamodb:${self:custom.config.region}:*:table/${self:provider.environment.MOST_RECENT_REQUEST_TABLE}/index/*"
         - "arn:aws:lambda:${self:custom.config.region}:*:function:*"
         - "arn:aws:ses:${self:custom.config.region}:*"
         - "arn:aws:ses:${self:custom.config.region}:*:identity/*"
@@ -197,3 +200,18 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.CUSTOM_EXPORT_REQUEST_TABLE}
+    MostRecentRequestTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: reportType
+            AttributeType: S
+        KeySchema:
+        - AttributeName: reportType
+          KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.MOST_RECENT_REQUEST_TABLE}
+

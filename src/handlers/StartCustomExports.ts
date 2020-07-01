@@ -95,6 +95,7 @@ async function createRequest(reportType: string, database: Database): Promise<Cu
     statusUrl: '',
     reportType,
   }
+  await database.saveMostRecentCustomExportRequest(request)
   await database.saveCustomExportRequest(request)
   return request
 }
