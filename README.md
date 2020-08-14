@@ -57,6 +57,8 @@ If you want to avoid the prompts you can create a `.env` file in the root of you
 }
 ```
 
+Note: Provide _either_ the `branchKey` and `branchSecret` for Daily Export support or the `branchAccessToken` and `branchAppId` for Custom Export support. Custom Exports are downloaded very 2 hours, whereas Daily Exports are only made available at midnight UTC.
+
 # AWS Setup
 
 If you don't already have an AWS account visit: https://aws.amazon.com to create one.
