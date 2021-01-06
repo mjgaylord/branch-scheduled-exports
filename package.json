@@ -16,7 +16,7 @@
     "start:dynamodb": "./node_modules/.bin/sls dynamodb start -p 8000  --migrate true"
   },
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "dotenv": "^8.2.0",
     "serverless-dynamodb-client": "0.0.2",
     "source-map-support": "^0.5.19",
